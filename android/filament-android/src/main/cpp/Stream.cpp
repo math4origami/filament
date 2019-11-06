@@ -24,6 +24,32 @@
 #include "common/NioUtils.h"
 #include "common/CallbackUtils.h"
 
+#ifdef ANDROID
+
+#if __has_include(<android/hardware_buffer_jni.h>)
+#include <android/hardware_buffer_jni.h>
+#else
+struct AHardwareBuffer;
+typedef struct AHardwareBuffer AHardwareBuffer;
+#endif
+
+#include <android/log.h>
+
+#include <dlfcn.h>
+
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+
+using PFNEGLCREATENATIVECLIENTBUFFERANDROID = EGLClientBuffer(EGLAPIENTRYP)(const EGLint* attrib_list);
+using PFNEGLGETNATIVECLIENTBUFFERANDROID = EGLClientBuffer(EGLAPIENTRYP)(const AHardwareBuffer* buffer);
+
+template <typename T>
+static void loadSymbol(T*& pfn, const char *symbol) noexcept {
+    pfn = (T*)dlsym(RTLD_DEFAULT, symbol);
+}
+
+#endif
+
 using namespace filament;
 using namespace backend;
 
@@ -108,10 +134,10 @@ Java_com_google_android_filament_Stream_nBuilderBuild(JNIEnv*, jclass,
     return (jlong) builder->builder()->build(*engine);
 }
 
-extern "C" JNIEXPORT jboolean JNICALL
-Java_com_google_android_filament_Stream_nIsNative(JNIEnv*, jclass, jlong nativeStream) {
+extern "C" JNIEXPORT jint JNICALL
+Java_com_google_android_filament_Stream_nGetStreamType(JNIEnv*, jclass, jlong nativeStream) {
     Stream* stream = (Stream*) nativeStream;
-    return (jboolean) stream->isNativeStream();
+    return (jint) stream->getStreamType();
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -159,4 +185,54 @@ extern "C" JNIEXPORT jlong JNICALL
 Java_com_google_android_filament_Stream_nGetTimestamp(JNIEnv*, jclass, jlong nativeStream) {
     Stream *stream = (Stream *) nativeStream;
     return stream->getTimestamp();
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_google_android_filament_Stream_nSetAcquiredImage(JNIEnv* env, jclass, jlong nativeStream,
+        jlong nativeEngine, jobject hwbuffer, jobject handler, jobject runnable) {
+    Engine* engine = (Engine*) nativeEngine;
+    Stream* stream = (Stream*) nativeStream;
+
+#ifdef ANDROID
+
+    AHardwareBuffer* (*AHardwareBuffer_fromHardwareBuffer)(JNIEnv*, jobject);
+    loadSymbol(AHardwareBuffer_fromHardwareBuffer, "AHardwareBuffer_fromHardwareBuffer");
+
+    AHardwareBuffer* nativeBuffer = AHardwareBuffer_fromHardwareBuffer(env, hwbuffer);
+    if (!nativeBuffer) {
+        __android_log_print(ANDROID_LOG_INFO, "Filament", "Unable to obtain native HardwareBuffer.");
+        return;
+    }
+
+    auto eglGetNativeClientBufferANDROID = (PFNEGLGETNATIVECLIENTBUFFERANDROID) eglGetProcAddress("eglGetNativeClientBufferANDROID");
+    if (!eglGetNativeClientBufferANDROID) {
+        __android_log_print(ANDROID_LOG_ERROR, "Filament", "Unable to get proc for eglGetNativeClientBufferANDROID.");
+        return;
+    }
+
+    EGLClientBuffer clientBuffer = eglGetNativeClientBufferANDROID(nativeBuffer);
+    if (!clientBuffer) {
+        __android_log_print(ANDROID_LOG_ERROR, "Filament", "Unable to get EGLClientBuffer from AHardwareBuffer.");
+        return;
+    }
+
+    auto eglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC) eglGetProcAddress("eglCreateImageKHR");
+    EGLint attrs[] = { /* EGL_PROTECTED_CONTENT_EXT, EGL_TRUE, */ EGL_NONE, EGL_NONE };
+    EGLImageKHR eglImage = eglCreateImageKHR(eglGetCurrentDisplay(), EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, clientBuffer, attrs);
+    if (eglImage == EGL_NO_IMAGE_KHR) {
+        __android_log_print(ANDROID_LOG_ERROR, "Filament", "eglCreateImageKHR returned no image.");
+        return;
+    }
+
+    auto nativeCallback = [](void* image, void* userdata) {
+        auto eglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC) eglGetProcAddress("eglDestroyImageKHR");
+        if (eglDestroyImageKHR(eglGetCurrentDisplay(), (EGLImageKHR) image) == EGL_FALSE) {
+            __android_log_print(ANDROID_LOG_ERROR, "Filament", "Unable to destroy image.");
+        }
+        JniImageCallback::invoke(image, userdata);
+    };
+
+    auto* callback = JniImageCallback::make(engine, env, handler, runnable, (long) eglImage);
+    stream->setAcquiredImage((void*) eglImage, nativeCallback, callback);
+#endif
 }
