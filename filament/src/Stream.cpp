@@ -95,7 +95,7 @@ FStream::FStream(FEngine& engine, const Builder& builder) noexcept
 
     if (mNativeStream) {
         // Note: this is a synchronous call. On Android, this calls back into Java.
-        mStreamHandle = engine.getDriverApi().createStream(mNativeStream);
+        mStreamHandle = engine.getDriverApi().createStreamNative(mNativeStream);
     } else if (mExternalTextureId) {
         mStreamHandle = engine.getDriverApi().createStreamFromTextureId(
                 mExternalTextureId, mWidth, mHeight);

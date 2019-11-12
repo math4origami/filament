@@ -215,7 +215,7 @@ DECL_DRIVER_API_N(destroyStream,          backend::StreamHandle, sh)
  */
 
 DECL_DRIVER_API_SYNCHRONOUS_0(void, terminate)
-DECL_DRIVER_API_SYNCHRONOUS_N(backend::StreamHandle, createStream, void*, stream)
+DECL_DRIVER_API_SYNCHRONOUS_N(backend::StreamHandle, createStreamNative, void*, stream)
 DECL_DRIVER_API_SYNCHRONOUS_N(backend::StreamHandle, createStreamAcquired)
 DECL_DRIVER_API_SYNCHRONOUS_N(void, setAcquiredImage, backend::StreamHandle, stream, void*, image, backend::StreamCallback, cb, void*, userData)
 DECL_DRIVER_API_SYNCHRONOUS_N(void, setStreamDimensions, backend::StreamHandle, stream, uint32_t, width, uint32_t, height)

@@ -392,7 +392,7 @@ ShaderModel MetalDriver::getShaderModel() const noexcept {
 #endif
 }
 
-Handle<HwStream> MetalDriver::createStream(void* stream) {
+Handle<HwStream> MetalDriver::createStreamNative(void* stream) {
     return {};
 }
 

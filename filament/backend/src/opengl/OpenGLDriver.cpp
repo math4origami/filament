@@ -1183,7 +1183,7 @@ void OpenGLDriver::destroyStream(Handle<HwStream> sh) {
 // These are called on the application's thread
 // ------------------------------------------------------------------------------------------------
 
-Handle<HwStream> OpenGLDriver::createStream(void* nativeStream) {
+Handle<HwStream> OpenGLDriver::createStreamNative(void* nativeStream) {
     Handle<HwStream> sh( allocateHandle(sizeof(GLStream)) );
     Platform::Stream* stream = mPlatform.createStream(nativeStream);
     construct<GLStream>(sh, stream);
