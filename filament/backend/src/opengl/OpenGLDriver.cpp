@@ -1015,7 +1015,7 @@ void OpenGLDriver::createStreamFromTextureIdR(Handle<HwStream> sh,
     s->width = width;
     s->height = height;
     s->gl.externalTextureId = static_cast<GLuint>(externalTextureId);
-    s->streamType = StreamType::TEXID;
+    s->streamType = StreamType::TEXTURE_ID;
     glGenTextures(GLStream::ROUND_ROBIN_TEXTURE_COUNT, s->user_thread.read);
     glGenTextures(GLStream::ROUND_ROBIN_TEXTURE_COUNT, s->user_thread.write);
     for (auto& info : s->user_thread.infos) {
@@ -1164,7 +1164,7 @@ void OpenGLDriver::destroyStream(Handle<HwStream> sh) {
         }
         if (s->streamType == StreamType::NATIVE) {
             mPlatform.destroyStream(s->stream);
-        } else if (s->streamType == StreamType::TEXID) {
+        } else if (s->streamType == StreamType::TEXTURE_ID) {
             glDeleteTextures(GLStream::ROUND_ROBIN_TEXTURE_COUNT, s->user_thread.read);
             glDeleteTextures(GLStream::ROUND_ROBIN_TEXTURE_COUNT, s->user_thread.write);
             if (s->gl.fbo) {
@@ -1225,7 +1225,7 @@ void OpenGLDriver::updateStreams(DriverApi* driver) {
                 continue;
             }
 
-            if (s->streamType == StreamType::TEXID) {
+            if (s->streamType == StreamType::TEXTURE_ID) {
                 state.setup();
                 updateStreamTexId(t, driver);
             }
@@ -1801,7 +1801,7 @@ void OpenGLDriver::attachStream(GLTexture* t, GLStream* hwStream) noexcept {
         case StreamType::NATIVE:
             mPlatform.attach(hwStream->stream, t->gl.id);
             break;
-        case StreamType::TEXID:
+        case StreamType::TEXTURE_ID:
             assert(t->target == SamplerType::SAMPLER_EXTERNAL);
             // The texture doesn't need a texture name anymore, get rid of it
             gl.unbindTexture(t->gl.target, t->gl.id);
@@ -1827,7 +1827,7 @@ void OpenGLDriver::detachStream(GLTexture* t) noexcept {
         case StreamType::NATIVE:
             mPlatform.detach(t->hwStream->stream);
             break;
-        case StreamType::TEXID:
+        case StreamType::TEXTURE_ID:
             glGenTextures(1, &t->gl.id);
             break;
         case StreamType::ACQUIRED:
@@ -1846,7 +1846,7 @@ void OpenGLDriver::replaceStream(GLTexture* t, GLStream* hwStream) noexcept {
             glGenTextures(1, &t->gl.id);
             mPlatform.attach(hwStream->stream, t->gl.id);
             break;
-        case StreamType::TEXID:
+        case StreamType::TEXTURE_ID:
             assert(t->target == SamplerType::SAMPLER_EXTERNAL);
             t->gl.id = hwStream->user_thread.read[hwStream->user_thread.cur];
             break;
@@ -2199,7 +2199,7 @@ void OpenGLDriver::updateStreamTexId(GLTexture* t, DriverApi* driver) noexcept {
 
     GLStream* s = static_cast<GLStream*>(t->hwStream);
     assert(s);
-    assert(s->streamType == StreamType::TEXID);
+    assert(s->streamType == StreamType::TEXTURE_ID);
 
     // round-robin to the next texture name
     if (UTILS_UNLIKELY(DEBUG_NO_EXTERNAL_STREAM_COPY ||
@@ -2300,7 +2300,7 @@ void OpenGLDriver::readStreamPixels(Handle<HwStream> sh,
         return;
     }
 
-    if (UTILS_LIKELY(s->streamType == StreamType::TEXID)) {
+    if (UTILS_LIKELY(s->streamType == StreamType::TEXTURE_ID)) {
         GLuint tid = s->gl.externalTexture2DId;
         if (tid == 0) {
             return;

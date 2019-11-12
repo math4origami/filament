@@ -46,7 +46,7 @@ public:
      * By default, Stream objects are ACQUIRED and must have external images pushed to them via
      * <pre>Stream::setAcquiredImage</pre>.
      *
-     * To create a NATIVE or TEXID stream, call one of the <pre>stream</pre> methods
+     * To create a NATIVE or TEXTURE_ID stream, call one of the <pre>stream</pre> methods
      * on the builder.
      */
     class Builder : public BuilderBase<BuilderDetails> {
@@ -73,7 +73,7 @@ public:
         Builder& stream(void* stream) noexcept;
 
         /**
-         * Creates a TEXID stream. A texid stream will sample data from the supplied
+         * Creates a TEXTURE_ID stream. A texid stream will sample data from the supplied
          * external texture and copy it into an internal private texture.
          *
          * @param externalTextureId An opaque texture id (typically a GLuint created with glGenTextures)

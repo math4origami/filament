@@ -37,12 +37,12 @@ public class Stream {
      * Represents the immutable stream type.
      *
      * - NATIVE streams are not synchronized but are copy-free.
-     * - TEXID streams are synchronized, but they are GL-only and incur copies.
+     * - TEXTURE_ID streams are synchronized, but they are GL-only and incur copies.
      * - ACQUIRED streams are synchronized, copy-free, and take a release callback.
      */
     enum StreamType {
         NATIVE,
-        TEXID,
+        TEXTURE_ID,
         ACQUIRED,
     };
 
@@ -57,7 +57,7 @@ public class Stream {
      * By default, Stream objects are ACQUIRED and must have external images pushed to them via
      * {@line #setAcquiredImage}.
      *
-     * To create a NATIVE or TEXID stream, call one of the <pre>stream</pre> methods
+     * To create a NATIVE or TEXTURE_ID stream, call one of the <pre>stream</pre> methods
      * on the builder.
      */
     public static class Builder {
@@ -95,7 +95,7 @@ public class Stream {
         }
 
         /**
-         * Creates a TEXID stream. A copy stream will sample data from the supplied
+         * Creates a TEXTURE_ID stream. A copy stream will sample data from the supplied
          * external texture and copy it into an internal private texture.
          *
          * <p>Currently only OpenGL external texture ids are supported.</p>
@@ -171,7 +171,7 @@ public class Stream {
     }
 
     /**
-     * Indicates whether this <code>Stream</code> is NATIVE, TEXID, or ACQUIRED.
+     * Indicates whether this <code>Stream</code> is NATIVE, TEXTURE_ID, or ACQUIRED.
      */
     public StreamType getStreamType() {
         return StreamType.values()[nGetStreamType(getNativeObject())];

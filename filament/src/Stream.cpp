@@ -85,7 +85,7 @@ namespace details {
 FStream::FStream(FEngine& engine, const Builder& builder) noexcept
         : mEngine(engine),
           mStreamType(
-            builder->mExternalTextureId ? StreamType::TEXID :
+            builder->mExternalTextureId ? StreamType::TEXTURE_ID :
             (builder->mStream ? StreamType::NATIVE : StreamType::ACQUIRED)
           ),
           mNativeStream(builder->mStream),
@@ -126,7 +126,7 @@ void FStream::setDimensions(uint32_t width, uint32_t height) noexcept {
 
 void FStream::readPixels(uint32_t xoffset, uint32_t yoffset, uint32_t width, uint32_t height,
         backend::PixelBufferDescriptor&& buffer) noexcept {
-    if (getStreamType() == StreamType::TEXID) {
+    if (getStreamType() == StreamType::TEXTURE_ID) {
         // this works only on external texture id streams
 
         const size_t sizeNeeded = PixelBufferDescriptor::computeDataSize(

@@ -627,7 +627,7 @@ enum class BlendFunction : uint8_t {
 //! Stream for external textures
 enum class StreamType {
     NATIVE,
-    TEXID,
+    TEXTURE_ID,
     ACQUIRED,
 };
 
