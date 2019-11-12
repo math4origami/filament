@@ -1816,6 +1816,7 @@ void OpenGLDriver::attachStream(GLTexture* t, GLStream* hwStream) noexcept {
 
 UTILS_NOINLINE
 void OpenGLDriver::detachStream(GLTexture* t) noexcept {
+    auto& gl = mContext;
     auto& streams = mExternalStreams;
     auto pos = std::find(streams.begin(), streams.end(), t);
     if (pos != streams.end()) {
@@ -1826,34 +1827,54 @@ void OpenGLDriver::detachStream(GLTexture* t) noexcept {
     switch (s->streamType) {
         case StreamType::NATIVE:
             mPlatform.detach(t->hwStream->stream);
+            // ^ this deletes the texture id
             break;
         case StreamType::TEXTURE_ID:
-            glGenTextures(1, &t->gl.id);
             break;
         case StreamType::ACQUIRED:
+            gl.unbindTexture(t->gl.target, t->gl.id);
+            glDeleteTextures(1, &t->gl.id);
             break;
     }
+
+    glGenTextures(1, &t->gl.id);
 
     t->hwStream = nullptr;
 }
 
 UTILS_NOINLINE
-void OpenGLDriver::replaceStream(GLTexture* t, GLStream* hwStream) noexcept {
-    GLStream* s = static_cast<GLStream*>(t->hwStream);
-    switch (s->streamType) {
+void OpenGLDriver::replaceStream(GLTexture* texture, GLStream* newStream) noexcept {
+    assert(newStream && "Do not use replaceStream to detach a stream.");
+
+    // This could be implemented via detachStream + attachStream but inlining allows
+    // a few small optimizations, like not touching the mExternalStreams list.
+
+    GLStream* oldStream = static_cast<GLStream*>(texture->hwStream);
+    switch (oldStream->streamType) {
         case StreamType::NATIVE:
-            mPlatform.detach(t->hwStream->stream);
-            glGenTextures(1, &t->gl.id);
-            mPlatform.attach(hwStream->stream, t->gl.id);
+            mPlatform.detach(texture->hwStream->stream);
+            // ^ this deletes the texture id
             break;
         case StreamType::TEXTURE_ID:
-            assert(t->target == SamplerType::SAMPLER_EXTERNAL);
-            t->gl.id = hwStream->user_thread.read[hwStream->user_thread.cur];
-            break;
         case StreamType::ACQUIRED:
             break;
     }
-    t->hwStream = hwStream;
+
+    switch (newStream->streamType) {
+        case StreamType::NATIVE:
+            glGenTextures(1, &texture->gl.id);
+            mPlatform.attach(newStream->stream, texture->gl.id);
+            break;
+        case StreamType::TEXTURE_ID:
+            assert(texture->target == SamplerType::SAMPLER_EXTERNAL);
+            texture->gl.id = newStream->user_thread.read[newStream->user_thread.cur];
+            break;
+        case StreamType::ACQUIRED:
+            // Just re-use the old texture id.
+            break;
+    }
+
+    texture->hwStream = newStream;
 }
 
 void OpenGLDriver::beginRenderPass(Handle<HwRenderTarget> rth,
