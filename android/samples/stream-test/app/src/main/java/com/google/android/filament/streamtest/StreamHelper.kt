@@ -53,7 +53,7 @@ class StreamHelper(val activity: Activity, private val filamentEngine: Engine, p
      */
     enum class StreamSource {
         CAMERA_STREAM_SURFACE,
-        CANVAS_STREAM_NATIVE,     // copy-free but does not guarantee synchronization (deprecated)
+        CANVAS_STREAM_NATIVE,     // copy-free but does not guarantee synchronization
         CANVAS_STREAM_TEXID,      // synchronized but incurs a copy
         CANVAS_STREAM_ACQUIRED,   // synchronized and copy-free
     }

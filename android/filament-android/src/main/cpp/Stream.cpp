@@ -37,12 +37,6 @@ typedef struct AHardwareBuffer AHardwareBuffer;
 
 #include <dlfcn.h>
 
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
-
-using PFNEGLCREATENATIVECLIENTBUFFERANDROID = EGLClientBuffer(EGLAPIENTRYP)(const EGLint* attrib_list);
-using PFNEGLGETNATIVECLIENTBUFFERANDROID = EGLClientBuffer(EGLAPIENTRYP)(const AHardwareBuffer* buffer);
-
 template <typename T>
 static void loadSymbol(T*& pfn, const char *symbol) noexcept {
     pfn = (T*)dlsym(RTLD_DEFAULT, symbol);
@@ -204,35 +198,16 @@ Java_com_google_android_filament_Stream_nSetAcquiredImage(JNIEnv* env, jclass, j
         return;
     }
 
-    auto eglGetNativeClientBufferANDROID = (PFNEGLGETNATIVECLIENTBUFFERANDROID) eglGetProcAddress("eglGetNativeClientBufferANDROID");
-    if (!eglGetNativeClientBufferANDROID) {
-        __android_log_print(ANDROID_LOG_ERROR, "Filament", "Unable to get proc for eglGetNativeClientBufferANDROID.");
-        return;
-    }
+    auto* callback = JniImageCallback::make(engine, env, handler, runnable, (long) nativeBuffer);
 
-    EGLClientBuffer clientBuffer = eglGetNativeClientBufferANDROID(nativeBuffer);
-    if (!clientBuffer) {
-        __android_log_print(ANDROID_LOG_ERROR, "Filament", "Unable to get EGLClientBuffer from AHardwareBuffer.");
-        return;
-    }
+#else
 
-    auto eglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC) eglGetProcAddress("eglCreateImageKHR");
-    EGLint attrs[] = { /* EGL_PROTECTED_CONTENT_EXT, EGL_TRUE, */ EGL_NONE, EGL_NONE };
-    EGLImageKHR eglImage = eglCreateImageKHR(eglGetCurrentDisplay(), EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, clientBuffer, attrs);
-    if (eglImage == EGL_NO_IMAGE_KHR) {
-        __android_log_print(ANDROID_LOG_ERROR, "Filament", "eglCreateImageKHR returned no image.");
-        return;
-    }
+    // TODO: for non-Android platforms, it is unclear how to go from "jobject" to "void*"
+    // For now this code is reserved for future use.
+    auto* callback = JniImageCallback::make(engine, env, handler, runnable, 0);
+    void* nativeBuffer = nullptr;
 
-    auto nativeCallback = [](void* image, void* userdata) {
-        auto eglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC) eglGetProcAddress("eglDestroyImageKHR");
-        if (eglDestroyImageKHR(eglGetCurrentDisplay(), (EGLImageKHR) image) == EGL_FALSE) {
-            __android_log_print(ANDROID_LOG_ERROR, "Filament", "Unable to destroy image.");
-        }
-        JniImageCallback::invoke(image, userdata);
-    };
-
-    auto* callback = JniImageCallback::make(engine, env, handler, runnable, (long) eglImage);
-    stream->setAcquiredImage((void*) eglImage, nativeCallback, callback);
 #endif
+
+    stream->setAcquiredImage((void*) nativeBuffer, &JniImageCallback::invoke, callback);
 }

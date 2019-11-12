@@ -1202,14 +1202,14 @@ Handle<HwStream> OpenGLDriver::createStreamAcquired() {
 // setAcquiredImage should be called by the user outside of beginFrame / endFrame, and should be
 // called only once per frame. If the user pushes images to the same stream multiple times in a
 // single frame, we emit a warning and honor only the final image, but still invoke all callbacks.
-void OpenGLDriver::setAcquiredImage(Handle<HwStream> sh, void* image,
+void OpenGLDriver::setAcquiredImage(Handle<HwStream> sh, void* hwbuffer,
         backend::StreamCallback cb, void* userData) {
     GLStream* glstream = handle_cast<GLStream*>(sh);
     if (glstream->user_thread.pending.image) {
         scheduleRelease(std::move(glstream->user_thread.pending));
         slog.w << "Acquired images is set more than once per frame." << io::endl;
     }
-    glstream->user_thread.pending = {image, cb, userData};
+    glstream->user_thread.pending = mPlatform.createAcquiredImage(hwbuffer, cb, userData);
 }
 
 void OpenGLDriver::updateStreams(DriverApi* driver) {
