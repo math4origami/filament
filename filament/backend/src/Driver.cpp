@@ -61,9 +61,9 @@ void DriverBase::scheduleDestroySlow(BufferDescriptor&& buffer) noexcept {
 
 // This is called from an async driver method so it's in the GL thread, but purge is called
 // on the user thread. This is typically called 0 or 1 times per frame.
-void DriverBase::scheduleRelease(const AcquiredImage& image) noexcept {
+void DriverBase::scheduleRelease(AcquiredImage&& image) noexcept {
     std::lock_guard<std::mutex> lock(mPurgeLock);
-    mImagesToPurge.push_back(image);
+    mImagesToPurge.push_back(std::move(image));
 }
 
 // ------------------------------------------------------------------------------------------------

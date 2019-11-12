@@ -78,8 +78,6 @@ public class Stream {
          * opaque platform object such as a {@link android.graphics.SurfaceTexture SurfaceTexture}
          * on Android.
          *
-         * @deprecated This lacks synchronization so ACQUIRED is preferred.
-         *
          * @param streamSource an opaque native stream handle, e.g.: on Android this must be a
          *                     {@link android.graphics.SurfaceTexture SurfaceTexture} object
          * @return This Builder, for chaining calls.

@@ -1206,7 +1206,7 @@ void OpenGLDriver::setAcquiredImage(Handle<HwStream> sh, void* image,
         backend::StreamCallback cb, void* userData) {
     GLStream* glstream = handle_cast<GLStream*>(sh);
     if (glstream->user_thread.pending.image) {
-        scheduleRelease(glstream->user_thread.pending);
+        scheduleRelease(std::move(glstream->user_thread.pending));
         slog.w << "Acquired images is set more than once per frame." << io::endl;
     }
     glstream->user_thread.pending = {image, cb, userData};
@@ -2185,7 +2185,7 @@ void OpenGLDriver::updateStreamAcquired(GLTexture* gltexture, DriverApi* driver)
         setExternalTexture(gltexture, image);
         if (previousImage.image) {
             whenGpuCommandsComplete([this, previousImage]()  {
-                scheduleRelease(previousImage);
+                scheduleRelease(AcquiredImage(previousImage));
             });
         }
     });

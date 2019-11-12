@@ -63,8 +63,6 @@ public:
          * Creates a NATIVE stream. Native streams can sample data directly from an
          * opaque platform object such as a SurfaceTexture on Android.
          *
-         * \deprecated This lacks synchronization so ACQUIRED is preferred.
-         *
          * @param stream An opaque native stream handle. e.g.: on Android this is an
          *                     `android/graphics/SurfaceTexture` JNI jobject.
          *
