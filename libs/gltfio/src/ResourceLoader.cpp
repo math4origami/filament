@@ -39,6 +39,7 @@
 
 #include <tsl/robin_map.h>
 
+#include <chrono>
 #include <string>
 
 using namespace filament;
@@ -310,6 +311,12 @@ bool ResourceLoader::createTextures(details::FFilamentAsset* asset) const {
     int width, height, comp;
     Texture* tex;
 
+    using clock = std::chrono::steady_clock;
+    using time_point = clock::time_point;
+    using duration = std::chrono::duration<float, std::milli>;
+
+    const time_point start = clock::now();
+
     tsl::robin_map<const void*, Texture*> bufTextures;
     tsl::robin_map<std::string, Texture*> urlTextures;
 
@@ -363,6 +370,10 @@ bool ResourceLoader::createTextures(details::FFilamentAsset* asset) const {
         urlTextures[tb.uri] = tex = createTexture(texels, width, height, tb.srgb);
         tb.materialInstance->setParameter(tb.materialParameter, tex, tb.sampler);
     }
+
+    const duration totalms = clock::now() - start;
+    slog.i << totalms.count() << " milliseconds for decoding." << io::endl;
+
     return true;
 }
 
