@@ -69,7 +69,7 @@ struct ResourceConfiguration {
  * because it listens to filament::backend::BufferDescriptor callbacks in order to determine when to
  * free CPU-side data blobs.
  *
- * \todo The GPU upload is asynchronous but the load-from-disk and image decode is not.
+ * Note that GPU uploading and texture decoding are asynchronous, but load-from-disk is not.
  */
 class ResourceLoader {
 public:
@@ -86,7 +86,19 @@ public:
      * Returns false if resources have already been loaded, or if one or more resources could not
      * be loaded.
      */
-    bool loadResources(FilamentAsset* asset);
+    bool loadResources(FilamentAsset* asset/*, Callback callback*/);
+
+    /**
+     * Similar to ResourceLoader::loadResources() but returns before textures have finished
+     * decoding.
+     *
+     * To wait until the decoding is finished, you can either call loadResourcesAsyncWait() or
+     * delete the ResourceLoader. The callbacks can be triggered at three times:
+     * loadResourcesAsync(), loadResourcesAsyncWait(), and ~ResourceLoader().
+     */
+    bool loadResourcesAsync(FilamentAsset* asset/*, Callback callback*/);
+
+    void loadResourcesAsyncWait() {}
 
     /**
      * Adds raw resource data into a cache for platforms that do not have filesystem or network

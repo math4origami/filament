@@ -1238,7 +1238,7 @@ void Pipeline::cgltfToSimpleMesh(const cgltf_data* sourceAsset, SimpleMesh** mes
             float* nrm = pNormals;
 
             // Note that SimpleMesh requires all vertex attributes to be float3, including texture
-            // coordinates. This is because baking uses UV as position data, and embree always
+        // coordinates. This is because baking uses UV as position data, and embree always
             // requires 3D position data.
             for (size_t i = 0; i < positions->count; ++i) {
                 cgltf_accessor_read_float(texcoords, i, uvs, 2);
